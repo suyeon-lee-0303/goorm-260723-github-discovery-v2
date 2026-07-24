@@ -99,6 +99,12 @@
   --spacing-gutter: 1.5rem;
   --spacing-container-max: 1280px;
 
+  /* Restore Tailwind max-width scale — custom --spacing-* tokens
+     otherwise override max-w-md/lg/2xl to tiny spacing values (16px/24px/48px). */
+  --max-width-md: 28rem;
+  --max-width-lg: 32rem;
+  --max-width-2xl: 42rem;
+
   --radius-sm: 0.25rem;
   --radius-DEFAULT: 0.5rem;
   --radius-md: 0.75rem;
