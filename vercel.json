@@ -4,5 +4,11 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/analyze.ts": { "maxDuration": 60 },
+    "api/dashboard.ts": { "maxDuration": 60 },
+    "api/analysis.ts": { "maxDuration": 60 },
+    "api/recommendation.ts": { "maxDuration": 60 }
+  }
 }

@@ -2,80 +2,98 @@
 
 > Discover Better Repositories with AI
 
-AI 기반 GitHub Repository Discovery Platform입니다.  
-기술명세(`doc/SPEC GitHub Discovery by Jun.md`)와 VCD 디자인 시스템을 바탕으로 **UI-first MVP**를 구현했습니다.
-
-## 이번 작업 요약 (Phase 1: UI)
-
-### 주요 내용
-
-- Vite + React 19 + TypeScript 프로젝트 스캐폴딩
-- Tailwind CSS v4 디자인 토큰 반영 (`DESIGN.md` 컬러·타이포·간격·글래스모피즘)
-- 브랜드명 **GitHub Discovery**로 통일 (디자인 시안의 DevDNA AI → 명세 기준 변경)
-- 디자인 4화면을 React 페이지로 이식하고 mock 데이터로 연결
-- React Router 라우팅 및 공통 레이아웃(TopNav / SideNav / MobileBottomNav)
-- Recharts 기반 Developer DNA 레이더 차트
-- 추천 Repository 클라이언트 검색 필터
-
-### 화면 구성
-
-| 경로 | 화면 | 주요 구성 |
-|------|------|-----------|
-| `/` | Landing | Hero, Precision Insights 벤토, CTA |
-| `/dashboard` | Main Dashboard | Profile, Developer DNA, Learning Compass, AI Coaching |
-| `/analysis` | AI Tech Analysis | Skill Ranking, Coaching cards, Activity Stream |
-| `/recommendations` | Repository Recommendations | 추천 카드, 토픽 칩, 검색 필터 |
-
-### 오류·이슈 수정
-
-| 이슈 | 조치 |
-|------|------|
-| `create-vite`가 `doc/`가 있는 비어 있지 않은 디렉터리에서 취소됨 | `/tmp`에 스캐폴드 후 프로젝트로 복사 |
-| TypeScript 6.0에서 `baseUrl` deprecation으로 `tsc -b` 실패 | `tsconfig.app.json`에 `ignoreDeprecations: "6.0"` 추가 |
-| 디자인 HTML의 `strikethrough_s` 아이콘이 DNA 의미와 불일치 | Material Symbol `genetics`로 교체 |
-| 브랜드명 불일치 (DevDNA AI vs GitHub Discovery) | UI 전역을 GitHub Discovery로 통일 |
-
-### 프로젝트 구조
-
-```text
-src/
-  components/
-    charts/          # DeveloperDnaChart (Recharts)
-    layout/          # TopNav, SideNav, AppShell, MobileBottomNav
-  data/mock.ts       # Phase 1 mock 데이터
-  pages/             # Landing, Dashboard, Analysis, Recommendations
-  types/             # 공통 타입
-  index.css          # Tailwind v4 @theme 디자인 토큰
-doc/
-  SPEC GitHub Discovery by Jun.md
-```
+AI 기반 GitHub Repository Discovery Platform (풀 MVP).
 
 ## 스택
 
-- React 19 + Vite + TypeScript
-- Tailwind CSS v4
-- React Router
-- Recharts
+- React 19 + Vite + TypeScript + Tailwind CSS v4 + TanStack Query
+- Vercel Serverless Functions (`/api`)
+- GitHub OAuth + iron-session
+- OpenAI GPT 분석
+- Neon PostgreSQL 캐시/저장
 
-## 실행
+## 로컬 실행
+
+1. `.env.example`을 복사해 `.env.local`을 만들고 값을 채웁니다.
+
+```bash
+cp .env.example .env.local
+```
+
+필수 값:
+
+- `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+- `SESSION_SECRET` (32자 이상)
+- `OPENAI_API_KEY`
+- `APP_URL=http://localhost:5173`
+- `DATABASE_URL` (Neon — 없으면 메모리 캐시만 사용)
+
+2. GitHub OAuth App 설정
+
+- Homepage URL: `http://localhost:5173`
+- Authorization callback URL: `http://localhost:5173/api/auth/callback`
+
+3. 터미널 두 개에서 실행:
 
 ```bash
 npm install
+npm run dev:api
 npm run dev
 ```
 
-프로덕션 빌드:
+- UI: http://localhost:5173  
+- API는 Vite가 `/api`를 `localhost:3000`(vercel dev)으로 프록시합니다.
+
+## 화면
+
+| 경로 | 설명 |
+|------|------|
+| `/` | Landing + GitHub 로그인 |
+| `/dashboard` | Profile, Developer DNA, Learning Compass |
+| `/analysis` | Skill Ranking, Coaching, Activity |
+| `/recommendations` | AI 추천 Repository |
+
+## API
+
+| Method | Path | 설명 |
+|--------|------|------|
+| GET | `/api/auth/github` | OAuth 시작 |
+| GET | `/api/auth/callback` | OAuth 콜백 |
+| GET | `/api/auth/me` | 세션 사용자 |
+| POST | `/api/auth/logout` | 로그아웃 |
+| GET | `/api/profile` | GitHub 프로필 |
+| GET | `/api/repos` | 내 Repository |
+| GET | `/api/starred` | Starred |
+| POST | `/api/analyze` | 강제 재분석 |
+| GET | `/api/dashboard` | 대시보드 합성 데이터 |
+| GET | `/api/analysis` | 분석 화면 데이터 |
+| GET | `/api/recommendation` | 추천 Repository |
+
+## Neon
+
+스키마는 첫 DB 사용 시 자동 생성됩니다. 수동 적용은 [`api/_lib/schema.sql`](api/_lib/schema.sql)을 참고하세요.
+
+분석 결과는 약 30분 TTL로 Neon + 메모리에 캐시됩니다.
+
+## Vercel 배포
+
+1. 이 리포를 Vercel에 Import
+2. Environment Variables에 `.env.local`과 동일한 키 등록
+3. `APP_URL`을 배포 URL로 변경 (예: `https://your-app.vercel.app`)
+4. GitHub OAuth App callback을 `{APP_URL}/api/auth/callback`으로 업데이트
+5. Deploy
+
+```bash
+npx vercel
+```
+
+빌드 확인:
 
 ```bash
 npm run build
-npm run preview
 ```
 
-## 다음 단계 (Phase 2: API / AI 연동)
+## 보안
 
-1. GitHub OAuth 로그인
-2. GitHub API 연동 (profile / repos / starred)
-3. OpenAI GPT 분석 (`/api/analyze`) — Developer DNA, Learning Radar
-4. Repository 추천 엔진
-5. Neon PostgreSQL 저장
-6. Vercel 배포
+- `.env.local` / secrets는 커밋하지 마세요 (`.gitignore`에 포함됨)
+- GitHub access token은 httpOnly 세션 쿠키에만 저장하고 DB에는 프로필·분석만 저장합니다
