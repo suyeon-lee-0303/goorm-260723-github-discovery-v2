@@ -1,4 +1,4 @@
-import { mockAnalysis } from '@/data/mock'
+import { useAnalysis } from '@/hooks/useDiscovery'
 
 const activityIcon = {
   repo: { icon: 'add', border: 'border-indigo-500', color: 'text-indigo-500', glow: 'shadow-[0_0_10px_rgba(99,102,241,0.4)]' },
@@ -8,7 +8,25 @@ const activityIcon = {
 } as const
 
 export function AnalysisPage() {
-  const { rankings, coaching, activities } = mockAnalysis
+  const { data, isLoading, isError, error } = useAnalysis()
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center font-body text-body-md text-on-surface-variant">
+        Loading AI tech analysis…
+      </div>
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="glass-card rounded-xl p-xl text-center font-body text-body-md text-rose-500">
+        {error instanceof Error ? error.message : 'Failed to load analysis'}
+      </div>
+    )
+  }
+
+  const { rankings, coaching, activities } = data
 
   return (
     <div>

@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import { DeveloperDnaChart } from '@/components/charts/DeveloperDnaChart'
-import { mockDashboard } from '@/data/mock'
+import { useDashboard } from '@/hooks/useDiscovery'
+import { postAnalyze } from '@/services/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
 const statusStyles = {
   growth: {
@@ -29,12 +32,75 @@ const statusStyles = {
   },
 } as const
 
+function formatCount(n: number) {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  return String(n)
+}
+
 export function DashboardPage() {
-  const { profile, dna, coaching, coachingTags, learningSkills, alignmentPercent, alignmentNote } =
-    mockDashboard
+  const { data, isLoading, isError, error, refetch } = useDashboard()
+  const queryClient = useQueryClient()
+  const [refreshing, setRefreshing] = useState(false)
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    try {
+      await postAnalyze()
+      await queryClient.invalidateQueries()
+      await refetch()
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center font-body text-body-md text-on-surface-variant">
+        Analyzing your GitHub DNA with AI… This can take up to a minute.
+      </div>
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="glass-card rounded-xl p-xl text-center">
+        <p className="mb-md font-body text-body-md text-rose-500">
+          {error instanceof Error ? error.message : 'Failed to load dashboard'}
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleRefresh()}
+          className="rounded-lg bg-indigo-500 px-md py-sm font-button text-button text-white"
+        >
+          Retry analysis
+        </button>
+      </div>
+    )
+  }
+
+  const {
+    profile,
+    dna,
+    coaching,
+    coachingTags,
+    learningSkills,
+    alignmentPercent,
+    alignmentNote,
+  } = data
 
   return (
     <div className="grid grid-cols-1 gap-lg lg:grid-cols-12">
+      <div className="lg:col-span-12 flex justify-end">
+        <button
+          type="button"
+          disabled={refreshing}
+          onClick={() => void handleRefresh()}
+          className="rounded-lg border border-slate-700 px-md py-sm font-button text-button text-on-surface transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+        >
+          {refreshing ? 'Re-analyzing…' : 'Refresh AI analysis'}
+        </button>
+      </div>
+
       <section className="flex flex-col gap-lg lg:col-span-4">
         <div className="glass-card ai-glow flex flex-col items-center rounded-xl p-xl text-center">
           <div className="relative mb-md">
@@ -55,13 +121,16 @@ export function DashboardPage() {
           <h1 className="font-headline text-headline-lg text-on-surface">
             {profile.name}
           </h1>
+          <p className="mb-xs font-code text-code-label text-indigo-500">
+            {profile.username}
+          </p>
           <p className="mb-md px-md font-body text-body-sm text-on-surface-variant">
             {profile.bio}
           </p>
           <div className="mt-sm flex w-full justify-center gap-xl border-t border-slate-700/50 pt-md">
             <div>
               <div className="font-headline text-headline-sm text-primary">
-                {(profile.followers / 1000).toFixed(1)}k
+                {formatCount(profile.followers)}
               </div>
               <div className="font-code text-code-label text-on-surface-variant">
                 Followers
@@ -69,7 +138,7 @@ export function DashboardPage() {
             </div>
             <div>
               <div className="font-headline text-headline-sm text-primary">
-                {profile.following}
+                {formatCount(profile.following)}
               </div>
               <div className="font-code text-code-label text-on-surface-variant">
                 Following
@@ -149,7 +218,7 @@ export function DashboardPage() {
 
           <div className="grid grid-cols-1 gap-lg md:grid-cols-2 lg:grid-cols-4">
             {learningSkills.map((skill) => {
-              const style = statusStyles[skill.status]
+              const style = statusStyles[skill.status] || statusStyles.stable
               return (
                 <div
                   key={skill.name}

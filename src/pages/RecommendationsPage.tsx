@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react'
-import { mockRecommendations } from '@/data/mock'
+import { useRecommendations } from '@/hooks/useDiscovery'
 
 export function RecommendationsPage() {
-  const { intro, repos, topics } = mockRecommendations
+  const { data, isLoading, isError, error } = useRecommendations()
   const [query, setQuery] = useState('')
+
+  const repos = data?.repos || []
+  const intro = data?.intro || ''
+  const topics = data?.topics || []
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -15,6 +19,22 @@ export function RecommendationsPage() {
       return haystack.includes(q)
     })
   }, [query, repos])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center font-body text-body-md text-on-surface-variant">
+        Curating repository recommendations…
+      </div>
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="glass-card rounded-xl p-xl text-center font-body text-body-md text-rose-500">
+        {error instanceof Error ? error.message : 'Failed to load recommendations'}
+      </div>
+    )
+  }
 
   return (
     <div>
