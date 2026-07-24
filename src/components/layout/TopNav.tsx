@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { mockDashboard } from '@/data/mock'
+import { useAuth } from '@/auth/AuthProvider'
 
 const topLinks = [
   { to: '/dashboard', label: 'Insights' },
@@ -13,7 +13,7 @@ interface TopNavProps {
 }
 
 export function TopNav({ showSearch = false, variant = 'app' }: TopNavProps) {
-  const profile = mockDashboard.profile
+  const { user, loading, loginUrl, logout } = useAuth()
 
   return (
     <header className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-surface-variant bg-slate-900/80 px-lg shadow-sm backdrop-blur-md">
@@ -45,12 +45,12 @@ export function TopNav({ showSearch = false, variant = 'app' }: TopNavProps) {
             >
               Features
             </a>
-            <NavLink
-              to="/dashboard"
+            <a
+              href={loginUrl}
               className="font-body text-body-md text-on-surface-variant transition-colors hover:text-primary"
             >
-              Demo
-            </NavLink>
+              Sign in
+            </a>
           </nav>
         )}
       </div>
@@ -78,34 +78,42 @@ export function TopNav({ showSearch = false, variant = 'app' }: TopNavProps) {
 
       <div className="flex items-center gap-md">
         {variant === 'landing' ? (
-          <NavLink
-            to="/dashboard"
-            className="rounded-lg bg-indigo-500 px-md py-sm font-button text-button text-white transition-all hover:bg-indigo-600 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
-          >
-            View Demo
-          </NavLink>
+          loading ? null : user ? (
+            <NavLink
+              to="/dashboard"
+              className="rounded-lg bg-indigo-500 px-md py-sm font-button text-button text-white transition-all hover:bg-indigo-600 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+            >
+              Open Dashboard
+            </NavLink>
+          ) : (
+            <a
+              href={loginUrl}
+              className="rounded-lg bg-indigo-500 px-md py-sm font-button text-button text-white transition-all hover:bg-indigo-600 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+            >
+              Sign in with GitHub
+            </a>
+          )
         ) : (
           <>
             <button
               type="button"
-              className="material-symbols-outlined cursor-pointer text-on-surface-variant transition-colors hover:text-primary"
-              aria-label="Notifications"
+              onClick={() => void logout()}
+              className="hidden rounded-lg border border-slate-700 px-sm py-xs font-button text-xs text-on-surface-variant transition-colors hover:border-primary hover:text-primary sm:inline-flex"
             >
-              notifications
-            </button>
-            <button
-              type="button"
-              className="material-symbols-outlined cursor-pointer text-on-surface-variant transition-colors hover:text-primary"
-              aria-label="Settings"
-            >
-              settings
+              Log out
             </button>
             <div className="h-8 w-8 overflow-hidden rounded-full border border-primary">
-              <img
-                className="h-full w-full object-cover"
-                src={profile.avatarUrl}
-                alt={profile.name}
-              />
+              {user?.avatarUrl ? (
+                <img
+                  className="h-full w-full object-cover"
+                  src={user.avatarUrl}
+                  alt={user.name || user.login}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-800 text-xs">
+                  ?
+                </div>
+              )}
             </div>
           </>
         )}

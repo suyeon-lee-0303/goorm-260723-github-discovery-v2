@@ -1,12 +1,26 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '@/auth/AuthProvider'
 import { TopNav } from '@/components/layout/TopNav'
 
 export function LandingPage() {
+  const { user, loginUrl } = useAuth()
+  const [params] = useSearchParams()
+  const authError = params.get('auth') === 'error'
+  const authRequired = params.get('auth') === 'required'
+
   return (
     <div className="min-h-screen bg-background font-body text-body-md antialiased">
       <TopNav variant="landing" />
 
       <main className="relative mx-auto max-w-container-max px-lg pb-xl pt-32">
+        {(authError || authRequired) && (
+          <div className="mb-lg rounded-lg border border-rose-500/40 bg-rose-500/10 px-md py-sm font-body text-body-sm text-rose-500">
+            {authError
+              ? 'GitHub sign-in failed. Check OAuth App settings and try again.'
+              : 'Sign in with GitHub to open your Developer DNA dashboard.'}
+          </div>
+        )}
+
         <section className="relative mb-32 flex flex-col items-center justify-between gap-2xl lg:flex-row">
           <div className="z-10 lg:w-1/2">
             <div className="animate-float mb-lg inline-flex items-center gap-sm rounded-full border border-indigo-500/30 bg-slate-800 px-md py-xs text-indigo-500">
@@ -29,21 +43,33 @@ export function LandingPage() {
               track technical growth, and map your path to engineering mastery.
             </p>
             <div className="flex flex-wrap gap-md">
-              <Link
-                to="/dashboard"
-                className="ai-glow group flex items-center gap-sm rounded-lg bg-indigo-500 px-xl py-md font-button text-button text-white transition-all hover:bg-indigo-600"
-              >
-                Start with GitHub
-                <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
-                  arrow_forward
-                </span>
-              </Link>
-              <Link
-                to="/dashboard"
+              {user ? (
+                <Link
+                  to="/dashboard"
+                  className="ai-glow group flex items-center gap-sm rounded-lg bg-indigo-500 px-xl py-md font-button text-button text-white transition-all hover:bg-indigo-600"
+                >
+                  Open Dashboard
+                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                    arrow_forward
+                  </span>
+                </Link>
+              ) : (
+                <a
+                  href={loginUrl}
+                  className="ai-glow group flex items-center gap-sm rounded-lg bg-indigo-500 px-xl py-md font-button text-button text-white transition-all hover:bg-indigo-600"
+                >
+                  Start with GitHub
+                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                    arrow_forward
+                  </span>
+                </a>
+              )}
+              <a
+                href={user ? '/dashboard' : loginUrl}
                 className="rounded-lg border border-slate-700 bg-slate-800 px-xl py-md font-button text-button text-on-surface transition-all hover:bg-slate-700"
               >
-                View Demo DNA
-              </Link>
+                {user ? 'View My DNA' : 'Sign in to view DNA'}
+              </a>
             </div>
           </div>
 
@@ -273,12 +299,21 @@ export function LandingPage() {
                 Discover Better Repositories with AI — quantify your technical
                 mastery and find your next learning path.
               </p>
-              <Link
-                to="/dashboard"
-                className="inline-block rounded-full bg-primary px-2xl py-md font-button text-button text-on-primary shadow-lg shadow-indigo-500/20 transition-all hover:bg-primary-container active:scale-95"
-              >
-                Analyze My Repositories
-              </Link>
+              {user ? (
+                <Link
+                  to="/dashboard"
+                  className="inline-block rounded-full bg-primary px-2xl py-md font-button text-button text-on-primary shadow-lg shadow-indigo-500/20 transition-all hover:bg-primary-container active:scale-95"
+                >
+                  Analyze My Repositories
+                </Link>
+              ) : (
+                <a
+                  href={loginUrl}
+                  className="inline-block rounded-full bg-primary px-2xl py-md font-button text-button text-on-primary shadow-lg shadow-indigo-500/20 transition-all hover:bg-primary-container active:scale-95"
+                >
+                  Analyze My Repositories
+                </a>
+              )}
               <div className="mt-xl flex items-center justify-center gap-md font-body text-body-sm text-on-surface-variant/60">
                 <div className="flex items-center gap-xs">
                   <span className="material-symbols-outlined text-[16px]">
@@ -289,9 +324,9 @@ export function LandingPage() {
                 <div className="h-1 w-1 rounded-full bg-slate-700" />
                 <div className="flex items-center gap-xs">
                   <span className="material-symbols-outlined text-[16px]">
-                    visibility_off
+                    verified_user
                   </span>
-                  Mock Demo Mode
+                  GitHub OAuth
                 </div>
               </div>
             </div>
